@@ -1,11 +1,12 @@
-import { Snapshot, useRecoilState } from "recoil"
+import { useRecoilState } from "recoil"
 import { modalState } from "../../atoms/modalAtom"
 import { Dialog, Transition } from "@headlessui/react"
 import { Fragment, useRef, useState } from "react"
 import { CameraIcon } from "@heroicons/react/outline"
-import { db, storage } from "../firebase"
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore"
-import { ref, getDownloadURL, uploadString } from "firebase/storage"
+import { db, storage } from "../../firebase"
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from "@firebase/firestore"
+import { ref, getDownloadURL, uploadString } from "@firebase/storage"
+import { useSession } from "next-auth/react"
 
 function Modal() {
     const { data: session } = useSession()
@@ -14,6 +15,7 @@ function Modal() {
     const captionRef = useRef(null)
     const [loading, setLoading] = useState(false)
     const [selectedFile, setSelectedFile] = useState(null)
+
     const uploadPost = async () => {
         if (loading) return;
         setLoading(true)
@@ -37,6 +39,7 @@ function Modal() {
         setSelectedFile(null)
 
     }
+
     const addImageToPost = (e) => {
         const reader = new FileReader();
         if (e.target.files[0]) {
@@ -135,7 +138,7 @@ function Modal() {
                                         type="button"
                                         disabled={!selectedFile}
                                         className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2  focus:ring-offset-2 focus:ring-red-500 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed  hover:disabled:bg-gray-300"
-                                        onClick={uploadPost}
+                                        onClick={() => uploadPost()}
                                     >
                                         {loading ? "Uploading...." : "Upload Post"}
                                     </button>
