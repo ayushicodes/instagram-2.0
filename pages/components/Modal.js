@@ -9,6 +9,7 @@ import { ref, getDownloadURL, uploadString } from "@firebase/storage"
 import { useSession } from "next-auth/react"
 
 function Modal() {
+
     const { data: session } = useSession()
     const [open, setOpen] = useRecoilState(modalState)
     const filePickerRef = useRef(null);
@@ -50,6 +51,7 @@ function Modal() {
         }
 
     }
+
     return (
         <Transition.Root show={open} as={Fragment} >
             <Dialog
