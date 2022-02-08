@@ -10,7 +10,7 @@ import {
 import {
     HeartIcon as HeartIconFilled
 } from "@heroicons/react/solid"
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { db } from "../../firebase"
@@ -23,8 +23,33 @@ function Post({ id, username, userImg, img, caption }) {
     const { data: session } = useSession()
     const [comment, setComment] = useState("")
     const [comments, setComments] = useState([])
+    const [likes, setLikes] = useState([])
+    const [hasliked, setHasLiked] = useState(false)
 
-    useEffect(() => onSnapshot(query(collection(db, 'posts', id, 'comments'), orderBy('timestamp', 'desc')), (snapshot) => setComments(snapshot.docs)), [db])
+    useEffect(() => onSnapshot(query(collection(db, 'posts', id, 'comments'), orderBy('timestamp', 'desc')), (snapshot) => setComments(snapshot.docs)), [db, id])
+
+    useEffect(
+
+        () =>
+            onSnapshot(collection(db, 'posts', id, 'likes'), (snapshot) => setLikes(snapshot.docs)), [db, id]
+    )
+    useEffect(() =>
+        setHasLiked(
+            likes.findIndex((like) => like.id === session?.user?.uid) !== -1
+        ), [likes]
+    );
+
+    const likePost = async () => {
+        if (hasliked) {
+            await deleteDoc(doc(db, 'posts', id, 'likes', session.user.uid))
+        } else {
+
+            await setDoc(doc(db, "posts", id, "likes", session.user.uid), {
+                username: session.user.username
+            })
+        }
+    }
+
     const sendComment = async (e) => {
         e.preventDefault()
         const commentToSend = comment;
@@ -32,7 +57,7 @@ function Post({ id, username, userImg, img, caption }) {
         await addDoc(collection(db, 'posts', id, 'comments'), {
             comment: commentToSend,
             username: session.user.username,
-            userImg: session.user.image,
+            userImage: session.user.image,
             timestamp: serverTimestamp()
         })
     }
@@ -53,7 +78,13 @@ function Post({ id, username, userImg, img, caption }) {
 
                 <div className="flex justify-between px-4 pt-4" >
                     <div className="flex space-x-4 " >
-                        <HeartIcon className="btn" />
+                        {
+                            hasliked ? (
+                                <HeartIconFilled onClick={likePost} className="btn text-red-500" />) : (
+
+                                <HeartIcon onClick={likePost} className="btn" />
+
+                            )}
                         <ChatIcon className="btn" />
                         <PaperAirplaneIcon className="btn" />
 
@@ -65,6 +96,9 @@ function Post({ id, username, userImg, img, caption }) {
 
             {/* Caption */}
             <p className="p-5 turncate">
+                {likes.length > 0 && (
+                    <p className="font-bold mb-1">  {likes.length}</p>
+                )}
                 <span className="mr-1" >{username} </span>
                 {caption}
             </p>
@@ -76,7 +110,7 @@ function Post({ id, username, userImg, img, caption }) {
                         <div key={comment.id} className='flex items-center space-x-2 mb-3'>
                             <img className="h-7 rounded-full " src={comment.data().userImage} alt="" />
                             <p className="text-sm flex-1"><span className="font-bold ">{comment.data().username} </span>{comment.data().comment}</p>
-                            <Moment fromNow> {comment.data().timestamp?.toDate()}</Moment>
+                            <Moment className="pr-5 text-xs" fromNow> {comment.data().timestamp?.toDate()}</Moment>
                         </div>
 
                     ))}
